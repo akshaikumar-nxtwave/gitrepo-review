@@ -20,17 +20,14 @@ const worker = new Worker(
 
     console.log("Processing repo:", repoId, git_url);
 
-    // ---------- FIXED: CROSS-PLATFORM TEMP DIRECTORY ----------
     const repoPath = path.join(os.tmpdir(), "code-review", repoId);
 
-    // Remove folder if it exists (Windows fix)
     if (fs.existsSync(repoPath)) {
       fs.rmSync(repoPath, { recursive: true, force: true });
     }
 
     fs.mkdirSync(repoPath, { recursive: true });
 
-    // ---------- STEP 3: CLONE REPO ----------
     const git = simpleGit();
 
     try {
@@ -47,7 +44,6 @@ const worker = new Worker(
       throw err;
     }
 
-    // ---------- FIXED: DETECT NESTED FOLDER ----------
     const repoFolder = git_url.split("/").pop()?.replace(".git", "") || "";
     const nestedPath = path.join(repoPath, repoFolder);
 
@@ -55,7 +51,6 @@ const worker = new Worker(
 
     console.log("Scanning files in:", targetPath);
 
-    // ---------- STEP 4: WALK ALL FILES ----------
     const allFiles: string[] = [];
 
     function walk(dir: string) {
@@ -77,7 +72,6 @@ const worker = new Worker(
 
     console.log(`Found ${allFiles.length} files in repo`);
 
-    // ---------- STEP 4: CHUNK + SAVE ----------
     for (const file of allFiles) {
       let content = "";
 
@@ -104,7 +98,6 @@ const worker = new Worker(
       }
     }
 
-    // STEP COMPLETE
     await supabase
       .from("repos")
       .update({ status: "indexed" })
